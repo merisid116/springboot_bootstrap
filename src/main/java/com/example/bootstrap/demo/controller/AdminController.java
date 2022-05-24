@@ -4,6 +4,8 @@ import com.example.bootstrap.demo.entity.User;
 import com.example.bootstrap.demo.service.RoleServiceImpl;
 import com.example.bootstrap.demo.service.UserServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.ui.ModelMap;
@@ -14,6 +16,7 @@ import java.security.Principal;
 
 @Controller
 @RequestMapping("/admin")
+@PreAuthorize("hasAuthority('ADMIN')")
 public class AdminController {
 
     private UserServiceImpl userService;
@@ -27,61 +30,52 @@ public class AdminController {
 
     public AdminController() {}
 
-    @GetMapping()
-    public String homeAdmin() {
-        return "redirect:/admin/users";
-    }
 
-    @GetMapping("users")
-    public String printUsers(Principal principal, Model model) {
-        User user = userService.getUserByEmail(principal.getName());
-        model.addAttribute("userSet", userService.getAllUsers());
-        model.addAttribute("user", user);
-        model.addAttribute("roles", user.getRoles());
+    @GetMapping
+    public String allUsers(Principal principal, Model model) {
+        model.addAttribute("user", userService.getUserByEmail(principal.getName()));
+        model.addAttribute("userList", userService.getAllUsers());
+        model.addAttribute("roleList", roleService.getAllRoles());
         return "admin";
     }
 
-    // добавить пользователя
-    @GetMapping(value = "users/new")
-    public String newUserForm(@ModelAttribute("user") User user, Model model) {
-        model.addAttribute("roles", roleService.getAllRoles());
-        return "admin";
-    }
-
-    @PostMapping(value ="users/new")
-    public String addUser(@ModelAttribute("user") User user,
-                          @RequestParam(value = "roles") String[] roles) {
+//     добавить пользователя
+    @PostMapping
+    public String createNewUser(@ModelAttribute("user") User user,
+                                @RequestParam(value = "nameRoles") String[] roles) {
         user.setRoles(roleService.getSetOfRoles(roles));
         userService.addUser(user);
-        return "redirect:/admin/users";
+        return "redirect:/admin/";
     }
 
     // изменение пользователя
 
-    @GetMapping("users/{id}/edit")
+    @GetMapping("{id}/edit")
     public String editUserForm(@ModelAttribute("user") User user,
                                ModelMap model,
-                               @PathVariable("id") Long id) {
+                               @PathVariable("id") Long id,
+                               @RequestParam(value = "editRoles") String[] roles) {
+        user.setRoles(roleService.getSetOfRoles(roles));
         model.addAttribute("roles", roleService.getAllRoles());
         model.addAttribute("user", userService.getUserById(id));
         return "admin";
     }
 
-    @PostMapping("users/{id}")
+    @PostMapping("/{id}")
     public String update(@ModelAttribute("user") User user,
-                         @PathVariable("id") long id,
+                         @PathVariable("id") Long id,
                          @RequestParam(value = "editRoles") String[] roles) {
         user.setRoles(roleService.getSetOfRoles(roles));
         userService.editUser(user);
-        return "redirect:/admin/users";
+        return "redirect:/admin/";
     }
 
     // удаление пользователя
 
-    @GetMapping("users/delete/{id}")
+    @GetMapping("/{id}/remove")
     public String deleteUser(@PathVariable("id") Long id) {
         userService.deleteUser(id);
-        return "redirect:/admin/users";
+        return "redirect:/admin/";
     }
 
 

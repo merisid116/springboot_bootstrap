@@ -55,6 +55,10 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        return userDao.getUserByEmail(email);
+        User user = userDao.getUserByEmail(email);
+        if (user == null) {
+            throw new UsernameNotFoundException(String.format("Пользователь с email = '%s' не найден"));
+        }
+        return user;
     }
 }
